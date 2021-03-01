@@ -1,14 +1,15 @@
-FROM golang:1.8
+FROM golang:1.15 as build
 
-WORKDIR /go/src/app
+WORKDIR /go/src/json-exporter
 COPY . .
-RUN go-wrapper download
-RUN go-wrapper install
-EXPOSE 9116
-CMD ["go-wrapper", "run"] # ["app"]
+RUN go get -v
+RUN go test -v
+RUN CGO_ENABLED=0 go build -v
 
-# Once 17.05 has arrived
-#FROM alpine:latest  
-#RUN apk --no-cache add ca-certificates
-#WORKDIR /root/
-#COPY --from= as builder /go/app .
+FROM alpine:latest
+
+COPY --from=build /go/src/json-exporter/json-exporter /json-exporter
+RUN chmod +x /json-exporter
+
+EXPOSE 9116
+ENTRYPOINT [ "/json-exporter" ]
